@@ -29,14 +29,19 @@ if __name__ == "__main__":
     meter = Agilent53131A(VXI11Adapter("10.23.68.217", name="gpib0,26"))
 
     print(meter.id)
-    print(meter.opt)
+    print(meter.options)
     print(binascii.hexlify(bytearray(meter.cal_read())))
     # b'233235360000080000000800000006c8000006cf000008420000083100000a060000093b00000674000005e700000663000006e1000007f70001326c0a'
 
-    meter.reset
-    meter.disp_control(False)
+    meter.reset()
+    print("Display Off/On")
+    meter.display_control = False
     sleep(1)
-    meter.disp_control(True)
+    meter.display_control = True
+    sleep(1)
+
+    print("Menu off")
+    meter.display_menu_off = 1
 
     print("Input impedance")
     meter.input_imp_set(1, 0)
@@ -83,7 +88,7 @@ if __name__ == "__main__":
     meter.format_data("ASCII")
 
     print("Hcopy disable")
-    meter.hcopy_disable()
+    meter.hcopy_off = 1
 
     print("Measure Frequency")
     """
@@ -94,10 +99,10 @@ if __name__ == "__main__":
     meter.arming_auto()
     meter.measure_freq()
     meter.trigger_level_set(0)
-    meter.osc_set("INT")
-    meter.calib_interpolator_auto(False)
-    meter.disp_control(False)
-    meter.hcopy_disable()
+    meter.reference = "INT"
+    meter.cal_interpolator_auto = False
+    meter.display = False
+    meter.hcopy_off = 1
     meter.postproc_disable()
     meter.trigger_set_fetc()
     meter.continous_mode()
@@ -106,10 +111,10 @@ if __name__ == "__main__":
     Using this greatly increases throughput, but is not
     recommended for signals that change by more than 10%
     """
-    temp_f = meter.fetch_freq()
+    temp_f = meter.fetch_frequency
     meter.freq_exp_set(temp_f)
     for pos in range(5):
-        print("Freq: ", meter.fetch_freq())
+        print("Freq: ", meter.fetch_frequency)
 
 
     print("Errors")

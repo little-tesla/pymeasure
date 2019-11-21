@@ -37,6 +37,7 @@ class TestProcedure(Procedure):
     def startup(self):
         log.info("Setting up counter")
         self.meter = Agilent53131A(VXI11Adapter("10.23.68.217", name="gpib0,26"))
+        self.meter.reset()
 
     def execute(self):
         log.info("Starting to log data")
@@ -45,10 +46,10 @@ class TestProcedure(Procedure):
         self.meter.arming_auto()
         self.meter.measure_freq()
         self.meter.trigger_level_set(0)
-        self.meter.osc_set("INT")
-        self.meter.calib_interpolator_auto(False)
-        self.meter.disp_control(False)
-        self.meter.hcopy_disable()
+        self.meter.reference = "INT"
+        self.meter.cal_interpolator_auto = False
+        self.meter.display = True
+        self.meter.hcopy_off = 1
         self.meter.postproc_disable()
         self.meter.trigger_set_fetc()
         self.meter.continous_mode()
@@ -63,7 +64,7 @@ class TestProcedure(Procedure):
         for i in range(self.iterations):
             data = {
                 'Iteration': i,
-                'Frequency': self.meter.fetch_freq()
+                'Frequency': self.meter.fetch_frequency
             }
             log.debug("Produced numbers: %s" % data)
             self.emit('results', data)

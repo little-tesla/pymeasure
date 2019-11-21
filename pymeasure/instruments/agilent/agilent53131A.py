@@ -24,7 +24,12 @@
 
 import logging
 from pymeasure.instruments import Instrument
-
+from pymeasure.instruments.validators import (
+    strict_discrete_set,
+    truncated_discrete_set,
+    truncated_range,
+    joined_validators
+)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -36,15 +41,63 @@ class Agilent53131A(Instrument):
     Implemented measurements: Frequency
     """
 
+    #############
+    #  Mappings #
+    #############
+    ONOFF = ["ON", "OFF"]
+    ONOFF_MAPPING = {True: 'ON', False: 'OFF', 1: 'ON', 0: 'OFF'}
+
     id = Instrument.measurement(
         "*IDN?", """ Reads the instrument identification """
     )
 
-    opt = Instrument.measurement(
+    options = Instrument.measurement(
         "*OPT?", """ Reads the installed options """
     )
 
-    read = Instrument.measurement(":READ?", "Frequency, in Hertz")
+    read_val = Instrument.measurement(":READ?", "Read current measured value.")
+
+    fetch_frequency = Instrument.measurement("FETCH:FREQ?", "Read current frequency.")
+
+    fetch_period = Instrument.measurement("FETCH:PERIOD?", "Read current period.")
+
+    display = Instrument.setting(
+        "DISP:ENABLE %s", "Instrument display (ON/OFF)",
+        validator=strict_discrete_set,
+        map_values=True,
+        values=ONOFF_MAPPING
+    )
+
+    display_menu_off = Instrument.setting(
+        ":DISP:MENU %s", "Clear active menu item. Set to 1 or True to initiate command",
+        map_values=True,
+        values={True: 'OFF'}
+    )
+
+    hcopy_off = Instrument.setting(
+        ":HCOPY:CONT %s", "Disable printing operation. Set to 1 or True to initiate command",
+        map_values=True,
+        values={True: 'OFF'}
+    )
+
+    reference = Instrument.setting(
+        ":ROSC:SOURCE %s", "Control reference oscillator. Can be set to INT / EXT",
+        validator=strict_discrete_set,
+        values=["INT", "EXT"]
+    )
+
+    reference_autocheck_off = Instrument.setting(
+        ":ROSC:EXT:CHECK %s", "Disable check of external reference source. Set to 1 or True to initiate command",
+        map_values=True,
+        values={True: 'OFF'}
+    )
+
+    cal_interpolator_auto = Instrument.setting(
+        ":DIAG:CAL:INT:AUTO %s", "Disable automatic interpolater calibration. The most recent calibration values are used in the calculation of frequency. Set to (ON/OFF)",
+        validator=strict_discrete_set,
+        map_values=True,
+        values=ONOFF_MAPPING
+    )
     
     def __init__(self, adapter, delay=0.02, **kwargs):
         super(Agilent53131A, self).__init__(
@@ -52,20 +105,8 @@ class Agilent53131A(Instrument):
         )
 
     def reset(self):
-        """ Resets the instrument state. """
+        """ Resets the instrument and clears the queue. """
         self.write("*RST;*CLS;*SRE 0;*ESE 0;:STAT:PRES;")
-
-    def disp_control(self, enable):
-        """ Enable or disable diplay. """
-        if enable:
-            flag = "ON"
-        else:
-            flag = "OFF"
-        self.write("DISP:ENABLE {0}".format(flag))
-
-    def disp_menu_off(self):
-        """ Clear active menu items. """
-        self.write(":DISP:MENU OFF")
 
     def measure_freq_simple(self, freq, resolution, channel):
         """ Configure measure frequency on channel. NOT TESTED"""
@@ -115,10 +156,6 @@ class Agilent53131A(Instrument):
         self.write(":CALC2:LIM:STATE OFF")
         self.write(":CALC3:AVER:STATE OFF")
 
-    def hcopy_disable(self):
-        """ Disable printing operation. """
-        self.write(":HCOPY:CONT OFF")
-
     def format_data(self, dtype = "ASCII"):
         """ Set data format. """
         self.write(":FORMAT {0}".format(dtype))
@@ -140,41 +177,11 @@ class Agilent53131A(Instrument):
         """ Start measurement. NOT TESTED"""
         self.write("INIT")
 
-    def osc_set(self, source="INT"):
-        """ Set reference oscillator.
-            INT or EXT"""
-        if source != "INT":
-            source = "EXT"
-
-        self.write(":ROSC:SOURCE {0}".format(source))
-
-    def osc_external_no_check(self):
-        """ Disable check of external osciallator source. """
-        self.write(":ROSC:EXT:CHECK OFF")
-
-    def calib_interpolator_auto(self, state):
-        """ Disable automatic interpolater calibration.
-        The most recent calibration values are used in the
-        calculation of frequency """
-        if state:
-            status = "ON"
-        else:
-            status = "OFF"
-        self.write(":DIAG:CAL:INT:AUTO {0}".format(status))
-
     def trigger_set_fetc(self):
         """ Define the Trigger command. This means the command FETC?
         does not need to be sent for every measurement, decreasing the
         number of bytes transferred over the bus  """
         self.write("*DDT #15FETC?")
-
-    def fetch_freq(self):
-        """ Read frequency measurement. """
-        return self.ask("FETCH:FREQ?")
-
-    def fetch_period(self):
-        """ Read period measurement. NOT TESTED"""
-        return self.ask("FETCH:PERIOD?")
 
     def input_imp_set(self, channel, impedance):
         """ Set input impedance 50OHM or 1MOHM. """
