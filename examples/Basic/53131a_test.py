@@ -44,45 +44,32 @@ if __name__ == "__main__":
     meter.display_menu_off = 1
 
     print("Input impedance")
-    meter.input_imp_set(1, 0)
-    print(meter.input_imp_get(1))
-    meter.input_imp_set(1, 50)
-    print(meter.input_imp_get(1))
+    meter.ch1.impedance = 1e6
+    print(meter.ch1.impedance)
+    sleep(0.5)
+    meter.ch1.impedance = 50
+    print(meter.ch1.impedance)
 
     print("Input filter")
-    meter.input_filt_set(1, True)
-    print(meter.input_filt_get(1))
-    meter.input_filt_set(1, False)
-    print(meter.input_filt_get(1))
+    meter.ch1.lpfilter = True
+    print(meter.ch1.lpfilter)
+    sleep(0.5)
+    meter.ch1.lpfilter = False
+    print(meter.ch1.lpfilter)
 
     print("Input coupling")
-    meter.input_coupling_set(1, "DC")
-    print(meter.input_coupling_get(1))
-    meter.input_coupling_set(1, "AC")
-    print(meter.input_coupling_get(1))
+    meter.ch1.coupling = "DC"
+    print(meter.ch1.coupling)
+    sleep(0.5)
+    meter.ch1.coupling = "AC"
+    print(meter.ch1.coupling)
 
     print("Input attenuator")
-    meter.input_att_set(1, 10)
-    print(meter.input_att_get(1))
-    meter.input_att_set(1, 1)
-    print(meter.input_att_get(1))
-
-    print("Input combined settings")
-    print("1 50 AC")
-    meter.input_configure(1, 1, 50, "AC")
-    print(meter.input_att_get(1), meter.input_imp_get(1), meter.input_coupling_get(1))
-    print("10 50 AC")
-    meter.input_configure(1, 10, 50, "AC")
-    print(meter.input_att_get(1), meter.input_imp_get(1), meter.input_coupling_get(1))
-    print("1 1M AC")
-    meter.input_configure(1, 1, 0, "AC")
-    print(meter.input_att_get(1), meter.input_imp_get(1), meter.input_coupling_get(1))
-    print("1 50 DC")
-    meter.input_configure(1, 1, 50, "DC")
-    print(meter.input_att_get(1), meter.input_imp_get(1), meter.input_coupling_get(1))
-    print("1 50 AC")
-    meter.input_configure(1, 1, 50, "AC")
-    print(meter.input_att_get(1), meter.input_imp_get(1), meter.input_coupling_get(1))
+    meter.ch1.attenuation = 10
+    print(meter.ch1.attenuation)
+    sleep(0.5)
+    meter.ch1.attenuation = 1
+    print(meter.ch1.attenuation)
 
     print("Format Data")
     meter.format_data("ASCII")
@@ -92,7 +79,7 @@ if __name__ == "__main__":
 
     print("Measure Frequency")
     """
-    This seto f commands sets up the counter to transfer data at the fastest
+    This set of commands sets up the counter to transfer data at the fastest
     possible rate. Note that the arming mode is AUTO. This mode provides
     the least resolution of all the arming modes.
     """
