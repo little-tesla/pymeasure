@@ -36,14 +36,38 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 class Channel3(object):
-        """The optional channel 3 supports only reading it's impedance,
-        which is anyway always 50Ohm. For simplicity this is hardcoded.
+        """ The optional channel 3 supports only reading it's impedance and coupling.
+        Coupling is always AC, for simplicity this is hardcoded.
         """
-        impedance = 50
+        IMP_MAPPING = {50: '50', 50.0: '50', 1e6: '1M', 1000000: '1M', 1000000.0: '1M'}
+
+        impedance = Instrument.measurement(
+            "IMP?",
+            """ A number property that reads the input impedance.
+            The value returned is 50, or Not a Number 9.91E37 if Option 030/050
+            Channel 3 is not installed. """
+        )
+
+        coupling = "AC"
         
         def __init__(self, instrument, number):
             self.instrument = instrument
             self.number = number
+
+        def values(self, command, **kwargs):
+            """ Reads a set of values from the instrument through the adapter,
+            passing on any key-word arguments.
+            """
+            return self.instrument.values(":INP%d:%s" % (
+                                          self.number, command), **kwargs)
+        def ask(self, command):
+            self.instrument.ask(":INP%d:%s" % (self.number, command))
+
+        def write(self, command):
+            self.instrument.write(":INP%d:%s" % (self.number, command))
+
+        def read(self):
+            self.instrument.read()
 
 class Channel(object):
         """This is the instrument channel representation class used for
@@ -53,7 +77,7 @@ class Channel(object):
         #############
         #  Mappings #
         #############
-        IMP_MAPPING = {50: '50', 1e6: '1M', 1000000: '1M'}
+        IMP_MAPPING = {50: '50', 50.0: '50', 1e6: '1M', 1000000: '1M', 1000000.0: '1M'}
         ONOFF_MAPPING = {True: 'ON', False: 'OFF', 1: 'ON', 0: 'OFF'}
 
         impedance = Instrument.control(
@@ -61,18 +85,19 @@ class Channel(object):
             """ A number property that controls the input impedance
             as 50OHM or 1MOHM. This property can be set (50, 1000000).""",
             validator=strict_discrete_set,
-            map_values=True,
             values=IMP_MAPPING
         )
 
         lpfilter = Instrument.control(
-            "FILT?","FILT %s",
+            "FILT?","FILT %d",
             """ A bool property that controls the input 100kHz filter.
             This property can be set (True, False).""",
             validator=strict_discrete_set,
-            map_values=True,
-            values=ONOFF_MAPPING
+            cast=bool,
+            values=ONOFF_MAPPING,
         )
+
+        lpfilter_freq = Instrument.measurement("FILT:LPAS:FREQ?", "Read filter frequency in Hz.")
 
         coupling = Instrument.control(
             "COUP?","COUP %s",
@@ -131,7 +156,7 @@ class Agilent53131A(Instrument):
             "*OPT?", """ Reads the installed options """
         )
 
-        read_val = Instrument.measurement(":READ?", "Read current measured value.")
+        val = Instrument.measurement(":READ?", "Read current measured value.")
 
         fetch_frequency = Instrument.measurement("FETCH:FREQ?", "Read current frequency.")
 
@@ -150,10 +175,13 @@ class Agilent53131A(Instrument):
             values={True: 'OFF'}
         )
 
-        hcopy_off = Instrument.setting(
-            ":HCOPY:CONT %s", "Disable printing operation. Set to 1 or True to initiate command",
-            map_values=True,
-            values={True: 'OFF'}
+        hcopy = Instrument.control(
+            ":HCOP:CONT?",":HCOP:CONT %d",
+            """ Enables or disables printing results.
+            This property can be set (True, False).""",
+            validator=strict_discrete_set,
+            cast=bool,
+            values=ONOFF_MAPPING,
         )
 
         reference = Instrument.setting(
@@ -169,12 +197,46 @@ class Agilent53131A(Instrument):
         )
 
         cal_interpolator_auto = Instrument.setting(
-            ":DIAG:CAL:INT:AUTO %s", "Disable automatic interpolater calibration. The most recent calibration values are used in the calculation of frequency. Set to (ON/OFF)",
+            ":DIAG:CAL:INT:AUTO %s", """ Disable automatic interpolater calibration.
+            The most recent calibration values are used in the calculation of frequency. Set to (ON/OFF) """,
             validator=strict_discrete_set,
             map_values=True,
             values=ONOFF_MAPPING
         )
-        
+
+        format = Instrument.setting(
+            ":FORM %s", "Sets a data format for transferring numeric information. ASCII or REAL",
+            validator=strict_discrete_set,
+            values=["ASCII", "REAL"]
+        )
+
+        measure_freq = Instrument.setting(
+            ":FREQ %d", "Set channel to measure frequency on.",
+            validator=strict_discrete_set,
+            values=[1, 2, 3]
+        )
+
+        cont_measurements = Instrument.control(
+            ":INIT:CONT?",":INIT:CONT %d",
+            """ Sets the enable for continuously initiated measurements.
+            This property can be set (True, False).""",
+            validator=strict_discrete_set,
+            cast=bool,
+            values=ONOFF_MAPPING,
+        )
+
+        func_frequency = Instrument.setting(
+            ":FUNC 'FREQ %d'", "Set channel to measure frequency on.",
+            validator=strict_discrete_set,
+            values=[1, 2, 3]
+        )
+
+        func_period = Instrument.setting(
+            ":FUNC 'PER %d'", "Set channel to measure period on.",
+            validator=strict_discrete_set,
+            values=[1, 2, 3]
+        )
+
         def __init__(self, adapter, delay=0.02, **kwargs):
             super(Agilent53131A, self).__init__(
                 adapter, "HP/Agilent/Keysight 53131A Counter", **kwargs
@@ -189,46 +251,33 @@ class Agilent53131A(Instrument):
             self.write("*RST;*CLS;*SRE 0;*ESE 0;:STAT:PRES;")
 
         def measure_freq_simple(self, freq, resolution, channel):
-            """ Configure measure frequency on channel. NOT TESTED"""
+            """ Configure measure frequency on channel. """
             if 0 < channel <= 3:
                 self.write(":MEASURE:FREQ? {0}Hz {1}, (@{2})".format(freq, resolution, channel))
 
         def configure_freq(self, channel):
-            """ Configure measure frequency on channel. NOT TESTED"""
+            """ Configure measure frequency on channel. """
             if 0 < channel <= 3:
                 self.write(":CONF:FREQ (@{0})".format(channel))
 
-        def measure_freq(self, channel):
-            """ Measure frequency on channel. NOT TESTED"""
-            if 0 < channel <= 3:
-                self.write("FREQ {0}".format(channel))
-
         def freq_exp_set(self, frequency):
-            """ Set expected frequency. NOT TESTED"""
+            """ Set expected frequency. """
             self.write(":FREQ:EXP1 {0}".format(frequency))
 
         def measure_t_interval(self):
-            """ Time Interval from CH1 to CH2. NOT TESTED"""
+            """ Time Interval from CH1 to CH2. """
             self.write("MEAS:TINT? (@1),(@2)")
 
-        def measure_freq(self):
-            """ Measure frequency. NOT TESTED"""
-            self.write(":FUNC 'FREQ 1'")
-
         def arming_auto(self):
-            """ Enable the time arming mode. NOT TESTED"""
+            """ Enable the time arming mode. """
             self.write(":FREQ:ARM:STAR:SOUR IMM")
             self.write(":FREQ:ARM:STOP:SOUR TIM")
 
         def arming_time(self, time):
-            """ Enable the time arming mode. NOT TESTED"""
+            """ Enable the time arming mode. """
             self.write(":FREQ:ARM:STAR:SOUR IMM")
             self.write(":FREQ:ARM:STOP:SOUR TIM")
             self.write((":FREQ:ARM:STOP:TIM %.1f" % time).lstrip('0'))
-
-        def continous_mode(self):
-            """ Put counter in run mode."""
-            self.write(":INIT:CONT ON")
 
         def postproc_disable(self):
             """ Disable all post processing. """
@@ -236,25 +285,21 @@ class Agilent53131A(Instrument):
             self.write(":CALC2:LIM:STATE OFF")
             self.write(":CALC3:AVER:STATE OFF")
 
-        def format_data(self, dtype = "ASCII"):
-            """ Set data format. """
-            self.write(":FORMAT {0}".format(dtype))
-
         def cal_read(self):
             """ Ask for calibration data. Returned data is binary. """
             self.write(":CAL:DATA?")
             return self.adapter.read_raw()
 
         def cal_write(self, data):
-            """ Write calibration data. Input data is binary. NOT TESTED"""
+            """ Write calibration data. Input data is binary. """
             self.adapter.write_raw(":CAL:DATA ".encode('utf-8') + data)
 
         def trigger_level_set(self, level):
-            """ Set trigger level. NOT TESTED"""
+            """ Set trigger level. """
             self.write((":EVENT1:LEVEL %.2f" % level).lstrip('0'))
 
         def measure_start(self):
-            """ Start measurement. NOT TESTED"""
+            """ Start measurement. """
             self.write("INIT")
 
         def trigger_set_fetc(self):

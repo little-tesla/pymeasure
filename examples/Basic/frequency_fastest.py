@@ -30,7 +30,6 @@ from pymeasure.display.windows import ManagedWindow
 class TestProcedure(Procedure):
 
     iterations = IntegerParameter('Loop Iterations', default=100)
-    delay = FloatParameter('Delay Time', units='s', default=0.2)
 
     DATA_COLUMNS = ['Iteration', 'Frequency']
 
@@ -39,26 +38,26 @@ class TestProcedure(Procedure):
         self.meter = Agilent53131A(VXI11Adapter("10.23.68.217", name="gpib0,26"))
         self.meter.reset()
 
-    def execute(self):
-        log.info("Starting to log data")
-
         # Setup instrument
         self.meter.arming_auto()
-        self.meter.measure_freq()
+        self.meter.measure_freq = 1
         self.meter.trigger_level_set(0)
         self.meter.reference = "INT"
         self.meter.cal_interpolator_auto = False
-        self.meter.display = True
-        self.meter.hcopy_off = 1
+        self.meter.display = False
+        self.meter.hcopy = False
         self.meter.postproc_disable()
         self.meter.trigger_set_fetc()
-        self.meter.continous_mode()
+        self.meter.cont_measurements = True
+
+    def execute(self):
+        log.info("Starting to log data")
         """
         This number must be within 10% of the Ch 1 input frequency.
         Using this greatly increases throughput, but is not
         recommended for signals that change by more than 10%
         """
-        temp_f = self.meter.fetch_freq()
+        temp_f = self.meter.fetch_frequency
         self.meter.freq_exp_set(temp_f)
 
         for i in range(self.iterations):
@@ -69,7 +68,6 @@ class TestProcedure(Procedure):
             log.debug("Produced numbers: %s" % data)
             self.emit('results', data)
             self.emit('progress', 100*i/self.iterations)
-            sleep(self.delay)
             if self.should_stop():
                 log.warning("Catch stop command in procedure")
                 break
@@ -83,8 +81,8 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super(MainWindow, self).__init__(
             procedure_class=TestProcedure,
-            inputs=['iterations', 'delay'],
-            displays=['iterations', 'delay',],
+            inputs=['iterations'],
+            displays=['iterations',],
             x_axis='Iteration',
             y_axis='Frequency'
         )

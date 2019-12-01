@@ -1,6 +1,6 @@
 """
 This example demonstrates how to make a graphical interface, and uses
-a Frequency counter to from which it reads the data.
+a Frequency counter from which it reads the data.
 
 Run the program by changing to the directory containing this file and calling:
 
@@ -30,25 +30,31 @@ from pymeasure.display.windows import ManagedWindow
 class TestProcedure(Procedure):
 
     iterations = IntegerParameter('Loop Iterations', default=100)
-    delay = FloatParameter('Delay Time', units='s', default=0.2)
+    gate = FloatParameter('Gate Time', units='s', default=0.2)
 
     DATA_COLUMNS = ['Iteration', 'Frequency']
 
     def startup(self):
         log.info("Setting up counter")
         self.meter = Agilent53131A(VXI11Adapter("10.23.68.217", name="gpib0,26"))
+        self.meter.reset()
+
+        # Setup instrument
+        self.meter.measure_freq = 1
+        self.meter.arming_time(self.gate)
 
     def execute(self):
         log.info("Starting to log data")
+
         for i in range(self.iterations):
+            self.meter.measure_start()
             data = {
                 'Iteration': i,
-                'Frequency': self.meter.read
+                'Frequency': self.meter.fetch_frequency
             }
             log.debug("Produced numbers: %s" % data)
             self.emit('results', data)
             self.emit('progress', 100*i/self.iterations)
-            sleep(self.delay)
             if self.should_stop():
                 log.warning("Catch stop command in procedure")
                 break
@@ -62,8 +68,8 @@ class MainWindow(ManagedWindow):
     def __init__(self):
         super(MainWindow, self).__init__(
             procedure_class=TestProcedure,
-            inputs=['iterations', 'delay'],
-            displays=['iterations', 'delay',],
+            inputs=['iterations', 'gate'],
+            displays=['iterations', 'gate',],
             x_axis='Iteration',
             y_axis='Frequency'
         )

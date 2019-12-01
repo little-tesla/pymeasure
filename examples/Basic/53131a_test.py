@@ -41,7 +41,7 @@ if __name__ == "__main__":
     sleep(1)
 
     print("Menu off")
-    meter.display_menu_off = 1
+    meter.display_menu_off = True
 
     print("Input impedance")
     meter.ch1.impedance = 1e6
@@ -56,6 +56,9 @@ if __name__ == "__main__":
     sleep(0.5)
     meter.ch1.lpfilter = False
     print(meter.ch1.lpfilter)
+
+    print("Input filter freq")
+    print(meter.ch1.lpfilter_freq)
 
     print("Input coupling")
     meter.ch1.coupling = "DC"
@@ -72,37 +75,51 @@ if __name__ == "__main__":
     print(meter.ch1.attenuation)
 
     print("Format Data")
-    meter.format_data("ASCII")
+    meter.format = "ASCII"
 
     print("Hcopy disable")
-    meter.hcopy_off = 1
+    meter.hcopy = False
 
-    print("Measure Frequency")
+    if 0:
+        print("Measure Frequency fastest")
+        """
+        This set of commands sets up the counter to transfer data at the fastest
+        possible rate. Note that the arming mode is AUTO. This mode provides
+        the least resolution of all the arming modes.
+        """
+        meter.reset()
+        meter.arming_auto()
+        meter.measure_freq = 1
+        meter.trigger_level_set(0)
+        meter.reference = "INT"
+        meter.cal_interpolator_auto = False
+        meter.display = False
+        meter.hcopy = False
+        meter.postproc_disable()
+        meter.trigger_set_fetc()
+        meter.cont_measurements = True
+        """
+        This number must be within 10% of the Ch 1 input frequency.
+        Using this greatly increases throughput, but is not
+        recommended for signals that change by more than 10%
+        """
+        temp_f = meter.fetch_frequency
+        meter.freq_exp_set(temp_f)
+        for pos in range(5):
+            print("Freq: ", meter.fetch_frequency)
+
+    print("Measure Frequency gated")
     """
-    This set of commands sets up the counter to transfer data at the fastest
-    possible rate. Note that the arming mode is AUTO. This mode provides
-    the least resolution of all the arming modes.
+    This set of commands sets up the counter to make freqeuncy measurements
+    on channel 1, using a 1 second gate time.
     """
-    meter.arming_auto()
-    meter.measure_freq()
-    meter.trigger_level_set(0)
-    meter.reference = "INT"
-    meter.cal_interpolator_auto = False
-    meter.display = False
-    meter.hcopy_off = 1
-    meter.postproc_disable()
-    meter.trigger_set_fetc()
-    meter.continous_mode()
-    """
-    This number must be within 10% of the Ch 1 input frequency.
-    Using this greatly increases throughput, but is not
-    recommended for signals that change by more than 10%
-    """
-    temp_f = meter.fetch_frequency
-    meter.freq_exp_set(temp_f)
+    meter.reset()
+    meter.measure_freq = 1
+    meter.arming_time(0.5)
+
     for pos in range(5):
+        meter.measure_start()
         print("Freq: ", meter.fetch_frequency)
-
 
     print("Errors")
     print(meter.check_errors())
