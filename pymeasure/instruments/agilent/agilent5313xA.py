@@ -135,9 +135,9 @@ class Channel(object):
             self.instrument.read()
 
 
-class Agilent53131A(Instrument):
+class Agilent5313xA(Instrument):
         """
-        Represent the HP/Agilent/Keysight 53131A and related counter.
+        Represent the HP/Agilent/Keysight 53131A and 53132A counter.
 
         Implemented measurements: Frequency
         """
