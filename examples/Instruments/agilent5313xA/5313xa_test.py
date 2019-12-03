@@ -1,11 +1,12 @@
 """
-This example demonstrates how to make a simple command line interface, and uses
-a random number generator to simulate data so that it does not require
-an instrument to use.
+This example demonstrates how to use the Agilent 5313xA with a VXI11Adapter.
+It performs multiple configurations on Channel 1 and finally it reads the
+frequency and prints it out. THerefore it requires that a singal source is 
+connected to to Channel 1 as well.
 
 Run the program by changing to the directory containing this file and calling:
 
-python script.py
+python3 5313xA_test.py
 
 """
 

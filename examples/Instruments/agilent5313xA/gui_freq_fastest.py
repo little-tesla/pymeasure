@@ -1,10 +1,12 @@
 """
-This example demonstrates how to make a graphical interface, and uses
-a Frequency counter to from which it reads the data.
+This example demonstrates how to make a graphical interface, by using
+the Agilent 5313xA Frequency counter from which it reads the frequency
+as fast as possible with least resolution.
+It uses a VXI11Adapter for communication.
 
 Run the program by changing to the directory containing this file and calling:
 
-python frequency.py
+python3 gui_freq_fastest.py
 
 """
 
