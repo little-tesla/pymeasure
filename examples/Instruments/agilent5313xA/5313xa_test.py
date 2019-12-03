@@ -18,7 +18,7 @@ import logging
 log = logging.getLogger('')
 log.addHandler(logging.NullHandler())
 
-from pymeasure.instruments.agilent import Agilent53131A
+from pymeasure.instruments.agilent import Agilent5313xA
 from pymeasure.adapters import VXI11Adapter
 
 import binascii
@@ -27,7 +27,7 @@ import binascii
 if __name__ == "__main__":
 
     log.info("Setting up counter")
-    meter = Agilent53131A(VXI11Adapter("10.23.68.217", name="gpib0,26"))
+    meter = Agilent5313xA(VXI11Adapter("10.23.68.217", name="gpib0,26"))
 
     print(meter.id)
     print(meter.options)

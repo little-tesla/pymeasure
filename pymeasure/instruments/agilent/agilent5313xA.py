@@ -137,7 +137,7 @@ class Channel(object):
 
 class Agilent5313xA(Instrument):
         """
-        Represent the HP/Agilent/Keysight 53131A and 53132A counter.
+        Represents the HP/Agilent/Keysight 53131A and 53132A counter.
 
         Implemented measurements: Frequency
         """
@@ -238,8 +238,8 @@ class Agilent5313xA(Instrument):
         )
 
         def __init__(self, adapter, delay=0.02, **kwargs):
-            super(Agilent53131A, self).__init__(
-                adapter, "HP/Agilent/Keysight 53131A Counter", **kwargs
+            super(Agilent5313xA, self).__init__(
+                adapter, "HP/Agilent/Keysight 5313xA Counter", **kwargs
             )
 
             self.ch1 = Channel(self, 1)
@@ -315,7 +315,7 @@ class Agilent5313xA(Instrument):
             while True:
                 err = self.values("SYST:ERR?")
                 if int(err[0]) != 0:
-                    errmsg = "Agilent 53131A: {0}: {1}".format(err[0], err[1])
+                    errmsg = "Agilent 5313xA: {0}: {1}".format(err[0], err[1])
                     log.error(errmsg + '\n')
                     errors.append(errmsg)
                 else:

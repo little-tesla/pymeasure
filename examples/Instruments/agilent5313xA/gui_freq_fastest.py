@@ -20,7 +20,7 @@ import logging
 log = logging.getLogger('')
 log.addHandler(logging.NullHandler())
 
-from pymeasure.instruments.agilent import Agilent53131A
+from pymeasure.instruments.agilent import Agilent5313xA
 from pymeasure.adapters import VXI11Adapter
 from pymeasure.log import console_log
 from pymeasure.experiment import Procedure, IntegerParameter, Parameter, FloatParameter
@@ -37,7 +37,7 @@ class TestProcedure(Procedure):
 
     def startup(self):
         log.info("Setting up counter")
-        self.meter = Agilent53131A(VXI11Adapter("10.23.68.217", name="gpib0,26"))
+        self.meter = Agilent5313xA(VXI11Adapter("10.23.68.217", name="gpib0,26"))
         self.meter.reset()
 
         # Setup instrument
