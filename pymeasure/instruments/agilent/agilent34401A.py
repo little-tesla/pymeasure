@@ -86,5 +86,24 @@ class Agilent34401A(Instrument):
         self.write("DISP:TEXT '%s'" % text)
 
     def display_textClear(self):
-        """ Clear sting from display """
+        """ Clear string from display """
         self.write("DISP:TEXT:CLE")
+
+    def reset(self):
+        """ Resets the instrument and clears the queue. """
+        self.write("*RST;*CLS;*SRE 0;*ESE 0;:STAT:PRES;")
+
+    def check_errors(self):
+        """ Read all errors from the instrument. """
+
+        errors = []
+        while True:
+            err = self.values("SYST:ERR?")
+            if int(err[0]) != 0:
+                errmsg = "Agilent 34401A: {0}: {1}".format(err[0], err[1])
+                log.error(errmsg + '\n')
+                errors.append(errmsg)
+            else:
+                break
+
+        return errors
