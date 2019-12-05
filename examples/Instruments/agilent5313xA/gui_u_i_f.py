@@ -21,7 +21,7 @@ log = logging.getLogger('')
 log.addHandler(logging.NullHandler())
 
 from pymeasure.instruments.hp import HP66312A
-from pymeasure.instruments.agilent import Agilent34401A
+from pymeasure.instruments.hp import HP34401A
 from pymeasure.instruments.agilent import Agilent5313xA
 from pymeasure.adapters import VXI11Adapter
 from pymeasure.log import console_log
@@ -38,20 +38,22 @@ class TestProcedure(Procedure):
     source_voltage = FloatParameter('Source Voltage', units='V', default=0.0)
     source_current = FloatParameter('Source Current', units='A', default=0.0)
 
-    DATA_COLUMNS = ['Iteration', 'Frequency', 'Usour', 'Isour', 'Umeas']
+    DATA_COLUMNS = ['Iteration', 'Frequency', 'Usour', 'Isour', 'Umeas', 'Uref']
 
     def startup(self):
         log.info("Setting up instruments")
-        self.fmeter = Agilent5313xA(VXI11Adapter("10.23.68.217", name="gpib0,26"))
-        self.fmeter.reset()
-        self.Umeter = Agilent34401A(VXI11Adapter("10.23.68.217", name="gpib0,22"))
-        self.Umeter.reset()
+        self.f_meter = Agilent5313xA(VXI11Adapter("10.23.68.217", name="gpib0,26"))
+        self.f_meter.reset()
+        self.usour_meter = HP34401A(VXI11Adapter("10.23.68.217", name="gpib0,22"))
+        self.usour_meter.reset()
+        self.uref_meter = HP34401A(VXI11Adapter("10.23.68.217", name="gpib0,15"))
+        self.uref_meter.reset()
         self.source = HP66312A(VXI11Adapter("10.23.68.217", name="gpib0,4"))
         self.source.reset()
 
         # Setup instruments
-        self.fmeter.measure_freq = 1
-        self.fmeter.arming_time(self.gate)
+        self.f_meter.measure_freq = 1
+        self.f_meter.arming_time(self.gate)
 
         self.source.sour_voltage = self.source_voltage
         self.source.sour_current = self.source_current
@@ -61,13 +63,14 @@ class TestProcedure(Procedure):
         log.info("Starting to log data")
 
         for i in range(self.iterations):
-            self.fmeter.measure_start()
+            self.f_meter.measure_start()
             data = {
                 'Iteration': i,
-                'Frequency': self.fmeter.fetch_frequency,
+                'Frequency': self.f_meter.fetch_frequency,
                 'Usour': self.source.meas_voltage_dc,
                 'Isour': self.source.meas_current_dc,
-                'Umeas': self.Umeter.voltage_dc
+                'Umeas': self.usour_meter.voltage_dc,
+                'Uref': self.uref_meter.voltage_dc
             }
             log.debug("Produced numbers: %s" % data)
             self.emit('results', data)

@@ -1,12 +1,11 @@
 """
 This example demonstrates how to make a graphical interface by using
-the Agilent 5313xA Frequency counter from which it reads the frequency
-with configurable gate time which defines the resolution.
+the HP34401A DMM from which it reads the voltage.
 It uses a VXI11Adapter for communication.
 
 Run the program by changing to the directory containing this file and calling:
 
-python3 gui_freq_gate.py
+python3 gui_voltage.py
 
 """
 
@@ -20,7 +19,7 @@ import logging
 log = logging.getLogger('')
 log.addHandler(logging.NullHandler())
 
-from pymeasure.instruments.agilent import Agilent34401A
+from pymeasure.instruments.hp import HP34401A
 from pymeasure.adapters import VXI11Adapter
 from pymeasure.log import console_log
 from pymeasure.experiment import Procedure, IntegerParameter, Parameter, FloatParameter
@@ -38,7 +37,7 @@ class TestProcedure(Procedure):
 
     def startup(self):
         log.info("Setting up instrument")
-        self.meter = Agilent34401A(VXI11Adapter("10.23.68.217", name="gpib0,22"))
+        self.meter = HP34401A(VXI11Adapter("10.23.68.217", name="gpib0,22"))
         #self.meter.reset()
 
     def execute(self):

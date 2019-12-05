@@ -43,6 +43,7 @@ class HP66312A(Instrument):
         "*IDN?", """ Reads the instrument identification """
     )
 
+    # Measure voltage, this triggers a measurement
     meas_voltage_dc = Instrument.measurement("MEAS:VOLT?", "DC voltage, in Volts")
     meas_voltage_high = Instrument.measurement("MEAS:VOLT:HIGH?", "DC voltage high, in Volts")
     meas_voltage_low = Instrument.measurement("MEAS:VOLT:LOW?", "DC voltage low, in Volts")
@@ -50,7 +51,17 @@ class HP66312A(Instrument):
     meas_voltage_min = Instrument.measurement("MEAS:VOLT:MIN?", "DC voltage min, in Volts")
     
     meas_voltage_acdc = Instrument.measurement("MEAS:VOLT:ACDC?", "DC+ACrms voltage, in Volts")
+
+    # Fetch voltage, this just reads current values
+    fetch_voltage_dc = Instrument.measurement("FETC:VOLT?", "DC voltage, in Volts")
+    fetch_voltage_high = Instrument.measurement("FETC:VOLT:HIGH?", "DC voltage high, in Volts")
+    fetch_voltage_low = Instrument.measurement("FETC:VOLT:LOW?", "DC voltage low, in Volts")
+    fetch_voltage_max = Instrument.measurement("FETC:VOLT:MAX?", "DC voltage max, in Volts")
+    fetch_voltage_min = Instrument.measurement("FETC:VOLT:MIN?", "DC voltage min, in Volts")
     
+    fetch_voltage_acdc = Instrument.measurement("FETC:VOLT:ACDC?", "DC+ACrms voltage, in Volts")
+    
+    # Measure current, this triggers a measurement
     meas_current_dc = Instrument.measurement("MEAS:CURR?", "DC current, in Amps")
     meas_current_high = Instrument.measurement("MEAS:CURR:HIGH?", "DC current, in Amps")
     meas_current_low = Instrument.measurement("MEAS:CURR:LOW?", "DC current, in Amps")
@@ -58,6 +69,15 @@ class HP66312A(Instrument):
     meas_current_min = Instrument.measurement("MEAS:CURR:MIN?", "DC current, in Amps")
     
     meas_current_acdc = Instrument.measurement("MEAS:CURR:ACDC?", "DC+ACrms current, in Amps")
+
+    # Fetch current, this just reads current values
+    fetch_current_dc = Instrument.measurement("FETC:CURR?", "DC current, in Amps")
+    fetch_current_high = Instrument.measurement("FETC:CURR:HIGH?", "DC current, in Amps")
+    fetch_current_low = Instrument.measurement("FETC:CURR:LOW?", "DC current, in Amps")
+    fetch_current_max = Instrument.measurement("FETC:CURR:MAX?", "DC current, in Amps")
+    fetch_current_min = Instrument.measurement("FETC:CURR:MIN?", "DC current, in Amps")
+    
+    fetch_current_acdc = Instrument.measurement("FETC:CURR:ACDC?", "DC+ACrms current, in Amps")
 
     output = Instrument.control(
         "OUTP?","OUTP %d",
